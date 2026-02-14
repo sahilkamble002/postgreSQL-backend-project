@@ -5,10 +5,65 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+
+model User{
+  id String @id @default(uuid())
+  name String
+  email String @unique
+  password String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+
+  movies  Movie[]    @relation("moviecreater")
+  movielistItems movielistItem[]
+  
+
+}
+
+model Movie{
+  id String @id @default(uuid())
+  title String
+  overview String?
+  releaseYear Int
+  genere String[] @default([])
+  runtime Int?
+  posterurl String?
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator User @relation("moviecreater", fields: [createdBy], references:[id], onDelete: Cascade)
+  movielistItems movielistItem[]
+}
+
+model movielistItem{
+  id String @id @default(uuid())
+  userId String
+  movieId String
+  status watchlistStatus @default(PLANNED)
+  rating Int?
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+}
+
+
+enum watchlistStatus{
+  PLANNED
+  WATCHING
+  COMPLETED
+  DROPPED
 }

@@ -1,22 +1,52 @@
-import express from 'express';
+import dotenv from "dotenv";
+import app from "./app.js";
+import { connectDB, disconnectDB } from "./config/db.config.js";
 
-const app = express();
+dotenv.config({ 
+    path: "./.env" 
+});
 
+const PORT = process.env.PORT || 5001;
 
+let server;
 
-//importing all the routes
-//http://localhost:5001/api/vi/movies
+// Start server only after DB connects
+const startServer = async () => {
+  try {
+    await connectDB();
 
-import movieRoutes from "./routes/movieRoutes.js";
+    server = app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+};
 
-app.use("/api/v1/movies", movieRoutes)
+startServer();
 
-app.get("/hello",(req,res)=>{
-    res.send("hello world");
-})
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (error) => {
+  console.error("Unhandled Rejection:", error);
+  server.close(async () => {
+    await disconnectDB();
+    process.exit(1);
+  });
+});
 
+// Handle uncaught exceptions
+process.on("uncaughtException", async (error) => {
+  console.error("Uncaught Exception:", error);
+  await disconnectDB();
+  process.exit(1);
+});
 
-const PORT = 5001;
-app.listen(PORT,()=>{
-    console.log(`Server is running on port ${PORT}`);
-})
+// Graceful shutdown (Ctrl + C)
+process.on("SIGINT", async () => {
+  console.log("SIGINT received. Shutting down...");
+  server.close(async () => {
+    await disconnectDB();
+    process.exit(0);
+  });
+});
