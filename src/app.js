@@ -13,8 +13,15 @@ app.use(express.static("public"));
 app.use("/api/v1/movies", movieRoutes);
 app.use("/api/v1/auth", authRoutes);
 
-app.get("/hello", (req, res) => {
-  res.send("hello world");
+// error handler (must be after routes)
+app.use((err, req, res, next) => {
+  const statusCode = err.status || err.StatusCode || 500;
+  const message = err.message || "Internal Server Error";
+  return res.status(statusCode).json({
+    statusCode,
+    message,
+    errors: err.error || [],
+  });
 });
 
 export default app;
